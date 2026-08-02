@@ -1,0 +1,9 @@
+fastapi==0.115.6
+mangum==0.19.0
+pydantic==2.10.4
+pydantic-settings==2.7.1
+pyyaml==6.0.2
+boto3==1.35.99
+email-validator==2.2.0
+pyjwt==2.10.1
+httpx==0.28.1

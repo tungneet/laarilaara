@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Secrets / local config (never committed)
+.env
+.env.*
+!.env.example
+config.yaml
+!config.yaml.example
+
+# Build / packaging artifacts
+build/
+dist/
+*.zip
+.aws-sam/

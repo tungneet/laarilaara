@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LaaraLaari — Sample 2: Modern Glass</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #eef2f8;
+    --ink-soft: #9aa7ba;
+    --radius: 20px;
+
+    /* groom (deep ocean) — default */
+    --bg-a: #0a1e33;
+    --bg-b: #10365c;
+    --glow-a: rgba(41, 121, 191, .45);
+    --glow-b: rgba(214, 77, 122, .28);
+    --primary: #4da3e8;
+    --primary-soft: rgba(77, 163, 232, .16);
+    --accent: #f06a9b;
+    --accent-soft: rgba(240, 106, 155, .16);
+    --glass: rgba(255, 255, 255, .07);
+    --glass-line: rgba(255, 255, 255, .14);
+  }
+  [data-theme="bride"] {
+    --bg-a: #2a0f24;
+    --bg-b: #57204a;
+    --glow-a: rgba(240, 106, 155, .40);
+    --glow-b: rgba(77, 163, 232, .25);
+    --primary: #f27ba6;
+    --primary-soft: rgba(240, 106, 155, .16);
+    --accent: #5db2f5;
+    --accent-soft: rgba(93, 178, 245, .16);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Inter", system-ui, sans-serif;
+    color: var(--ink);
+    min-height: 100vh;
+    background: linear-gradient(160deg, var(--bg-a), var(--bg-b));
+    background-attachment: fixed;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    transition: background .5s;
+  }
+  /* ambient glows */
+  body::before, body::after {
+    content: ""; position: fixed; border-radius: 50%; filter: blur(90px); z-index: 0;
+    pointer-events: none; transition: background .5s;
+  }
+  body::before { width: 560px; height: 560px; top: -160px; right: -120px; background: var(--glow-a); }
+  body::after { width: 480px; height: 480px; bottom: -180px; left: -140px; background: var(--glow-b); }
+  .wrap { position: relative; z-index: 1; max-width: 1180px; margin: 0 auto; padding: 0 40px; }
+
+  /* ── nav ─────────────────────────── */
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 22px 0;
+  }
+  .logo { font-family: "Sora", sans-serif; font-weight: 700; font-size: 22px; letter-spacing: -.4px; }
+  .logo span { color: var(--accent); }
+  .nav-right { display: flex; gap: 12px; align-items: center; }
+  .toggle {
+    display: flex; background: var(--glass); border: 1px solid var(--glass-line);
+    border-radius: 999px; padding: 4px; backdrop-filter: blur(12px);
+  }
+  .toggle button {
+    border: none; background: transparent; color: var(--ink-soft); cursor: pointer;
+    font: 500 13px "Inter", sans-serif; padding: 7px 16px; border-radius: 999px; transition: all .25s;
+  }
+  .toggle button.active { background: var(--primary); color: #0b1522; font-weight: 600; }
+  .btn {
+    border: none; cursor: pointer; text-decoration: none; display: inline-block;
+    font: 600 14px "Inter", sans-serif; border-radius: 999px; padding: 11px 24px;
+    transition: transform .15s, filter .15s;
+  }
+  .btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
+  .btn-primary { background: linear-gradient(120deg, var(--primary), var(--accent)); color: #0b1522; }
+  .btn-glass { background: var(--glass); color: var(--ink); border: 1px solid var(--glass-line); backdrop-filter: blur(12px); }
+
+  /* ── hero ─────────────────────────── */
+  .hero { text-align: center; padding: 72px 0 44px; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--glass); border: 1px solid var(--glass-line); backdrop-filter: blur(12px);
+    border-radius: 999px; padding: 7px 16px; font-size: 12.5px; color: var(--ink-soft); margin-bottom: 26px;
+  }
+  .pill i { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); display: inline-block; }
+  h1 {
+    font-family: "Sora", sans-serif; font-weight: 700;
+    font-size: clamp(38px, 5.2vw, 64px); line-height: 1.06; letter-spacing: -1.5px;
+    max-width: 17ch; margin: 0 auto 20px;
+  }
+  h1 .grad {
+    background: linear-gradient(100deg, var(--primary), var(--accent));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .lede { color: var(--ink-soft); font-size: 16.5px; line-height: 1.7; max-width: 52ch; margin: 0 auto 34px; }
+  .cta { display: flex; gap: 14px; justify-content: center; }
+
+  /* ── discovery preview panel ─────── */
+  .panel {
+    margin: 70px auto 40px;
+    background: var(--glass); border: 1px solid var(--glass-line);
+    border-radius: calc(var(--radius) + 6px); backdrop-filter: blur(20px);
+    padding: 26px; box-shadow: 0 40px 80px -40px rgba(0,0,0,.6);
+  }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .panel-head h2 { font-family: "Sora", sans-serif; font-size: 19px; font-weight: 600; letter-spacing: -.3px; }
+  .filters { display: flex; gap: 8px; }
+  .filter {
+    font-size: 12.5px; font-weight: 500; color: var(--ink-soft); cursor: pointer;
+    background: transparent; border: 1px solid var(--glass-line); border-radius: 999px; padding: 6px 14px;
+  }
+  .filter.on { background: var(--primary-soft); border-color: var(--primary); color: var(--ink); }
+
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .card {
+    background: rgba(255,255,255,.05); border: 1px solid var(--glass-line);
+    border-radius: var(--radius); overflow: hidden; transition: transform .2s, border-color .2s;
+  }
+  .card:hover { transform: translateY(-4px); border-color: var(--primary); }
+  .photo {
+    height: 170px; position: relative;
+    background:
+      radial-gradient(circle at 30% 20%, var(--primary-soft), transparent 60%),
+      radial-gradient(circle at 75% 80%, var(--accent-soft), transparent 55%),
+      rgba(255,255,255,.04);
+    display: grid; place-items: center;
+    font-family: "Sora", sans-serif; font-size: 46px; font-weight: 700; color: rgba(255,255,255,.22);
+  }
+  .vbadge {
+    position: absolute; top: 12px; left: 12px;
+    font-size: 10.5px; font-weight: 600; letter-spacing: .4px;
+    background: rgba(10, 20, 34, .55); border: 1px solid var(--glass-line);
+    color: var(--ink); backdrop-filter: blur(8px);
+    border-radius: 999px; padding: 4px 10px;
+  }
+  .vbadge::before { content: "✓ "; color: var(--primary); }
+  .score {
+    position: absolute; top: 12px; right: 12px;
+    font-family: "Sora", sans-serif; font-size: 13px; font-weight: 700;
+    background: linear-gradient(120deg, var(--primary), var(--accent)); color: #0b1522;
+    border-radius: 999px; padding: 5px 11px;
+  }
+  .cbody { padding: 15px 17px 17px; }
+  .cname { font-family: "Sora", sans-serif; font-size: 16.5px; font-weight: 600; }
+  .cmeta { font-size: 12.5px; color: var(--ink-soft); margin: 3px 0 12px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag {
+    font-size: 11px; font-weight: 500; color: var(--ink);
+    background: var(--primary-soft); border-radius: 999px; padding: 4px 10px;
+  }
+  .actions { display: flex; gap: 8px; margin-top: 14px; }
+  .actions .btn { flex: 1; text-align: center; padding: 9px 0; font-size: 13px; }
+
+  footer { text-align: center; padding: 28px; font-size: 12.5px; color: var(--ink-soft); position: relative; z-index: 1; }
+
+  @media (max-width: 900px) {
+    .grid { grid-template-columns: 1fr; }
+    .wrap { padding: 0 20px; }
+    .filters { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <nav>
+    <div class="logo">Laara<span>Laari</span></div>
+    <div class="nav-right">
+      <div class="toggle" role="group" aria-label="Browse theme">
+        <button class="active" onclick="setTheme('groom', this)">Groom</button>
+        <button onclick="setTheme('bride', this)">Bride</button>
+      </div>
+      <a class="btn btn-glass" href="#">Sign in</a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="pill"><i></i> Every profile identity-verified · Family-first by design</div>
+    <h1>Modern matchmaking, <span class="grad">timeless values.</span></h1>
+    <p class="lede">
+      A world-class matrimony experience for candidates and their parents —
+      intelligent compatibility, respectful introductions, and privacy you control.
+    </p>
+    <div class="cta">
+      <a class="btn btn-primary" href="#">Get started free</a>
+      <a class="btn btn-glass" href="#">See how it works</a>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Today's recommendations</h2>
+      <div class="filters">
+        <button class="filter on">Best match</button>
+        <button class="filter">Nearby</button>
+        <button class="filter">Recently joined</button>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <div class="photo">SK<span class="vbadge">Verified</span><span class="score">92%</span></div>
+        <div class="cbody">
+          <div class="cname">Simran K.</div>
+          <div class="cmeta">27 · Chandigarh · Software Engineer</div>
+          <div class="tags"><span class="tag">Vegetarian</span><span class="tag">Punjabi</span><span class="tag">Masters</span></div>
+          <div class="actions">
+            <a class="btn btn-primary" href="#">Express interest</a>
+            <a class="btn btn-glass" href="#">View</a>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="photo">AS<span class="vbadge">Verified</span><span class="score">88%</span></div>
+        <div class="cbody">
+          <div class="cname">Arjun S.</div>
+          <div class="cmeta">29 · Toronto · Physician</div>
+          <div class="tags"><span class="tag">Non-smoker</span><span class="tag">Gursikh</span><span class="tag">MD</span></div>
+          <div class="actions">
+            <a class="btn btn-primary" href="#">Express interest</a>
+            <a class="btn btn-glass" href="#">View</a>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="photo">HG<span class="vbadge">Verified</span><span class="score">85%</span></div>
+        <div class="cbody">
+          <div class="cname">Harleen G.</div>
+          <div class="cmeta">26 · London · Architect</div>
+          <div class="tags"><span class="tag">Amritdhari</span><span class="tag">Vegetarian</span><span class="tag">B.Arch</span></div>
+          <div class="actions">
+            <a class="btn btn-primary" href="#">Express interest</a>
+            <a class="btn btn-glass" href="#">View</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+<footer>Sample 2 — “Modern Glass” · bold, premium, app-like · toggle Groom/Bride to preview themes</footer>
+
+<script>
+  function setTheme(t, btn) {
+    document.documentElement.dataset.theme = t;
+    document.querySelectorAll(".toggle button").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+  }
+</script>
+</body>
+</html>

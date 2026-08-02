@@ -1,0 +1,143 @@
+@import "tailwindcss";
+
+/*
+  LaariLaara "Modern Glass" design system.
+  Neutral (common) theme by default — the personalized bride/groom variant is
+  applied automatically via `data-theme` on <html> once the acting profile's
+  gender is confirmed:
+    (default)          — neutral indigo, pre-login / gender unknown
+    [data-theme=groom] — deep ocean blues with magenta accent
+    [data-theme=bride] — deep plum pinks with sky-blue accent
+*/
+:root {
+  --ink: #eef2f8;
+  --ink-soft: #9aa7ba;
+
+  /* neutral (common) — deep indigo */
+  --bg-a: #12152b;
+  --bg-b: #272e56;
+  --glow-a: rgba(124, 140, 245, 0.38);
+  --glow-b: rgba(181, 140, 240, 0.26);
+  --primary: #8b9cf7;
+  --primary-soft: rgba(139, 156, 247, 0.16);
+  --on-primary: #0b1522;
+  --accent: #c39bf2;
+  --accent-soft: rgba(195, 155, 242, 0.16);
+  --glass: rgba(255, 255, 255, 0.07);
+  --glass-line: rgba(255, 255, 255, 0.14);
+}
+
+[data-theme="groom"] {
+  --bg-a: #0a1e33;
+  --bg-b: #10365c;
+  --glow-a: rgba(41, 121, 191, 0.45);
+  --glow-b: rgba(214, 77, 122, 0.28);
+  --primary: #4da3e8;
+  --primary-soft: rgba(77, 163, 232, 0.16);
+  --accent: #f06a9b;
+  --accent-soft: rgba(240, 106, 155, 0.16);
+}
+
+[data-theme="bride"] {
+  --bg-a: #2a0f24;
+  --bg-b: #57204a;
+  --glow-a: rgba(240, 106, 155, 0.4);
+  --glow-b: rgba(77, 163, 232, 0.25);
+  --primary: #f27ba6;
+  --primary-soft: rgba(240, 106, 155, 0.16);
+  --accent: #5db2f5;
+  --accent-soft: rgba(93, 178, 245, 0.16);
+}
+
+/*
+  Brand mark: which half of "LaariLaara" carries the accent color depends on
+  the active theme.
+    (default) / bride — "Laara" is accented (neutral purple / bride blue)
+    groom              — "Laari" is accented (pink), "Laara" stays plain
+*/
+.brand-laari,
+.brand-laara {
+  color: inherit;
+}
+
+.brand-laara {
+  color: var(--accent);
+}
+
+[data-theme="groom"] .brand-laari {
+  color: var(--accent);
+}
+
+[data-theme="groom"] .brand-laara {
+  color: inherit;
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-primary: var(--primary);
+  --color-primary-soft: var(--primary-soft);
+  --color-on-primary: var(--on-primary);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-glass: var(--glass);
+  --color-glass-line: var(--glass-line);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-sora), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-card: 20px;
+}
+
+body {
+  color: var(--ink);
+  background: linear-gradient(160deg, var(--bg-a), var(--bg-b));
+  background-attachment: fixed;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  transition: background 0.5s;
+}
+
+/* ambient glows */
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(90px);
+  z-index: 0;
+  pointer-events: none;
+  transition: background 0.5s;
+}
+body::before {
+  width: 560px;
+  height: 560px;
+  top: -160px;
+  right: -120px;
+  background: var(--glow-a);
+}
+body::after {
+  width: 480px;
+  height: 480px;
+  bottom: -180px;
+  left: -140px;
+  background: var(--glow-b);
+}
+
+@utility glass {
+  background: var(--glass);
+  border: 1px solid var(--glass-line);
+  backdrop-filter: blur(16px);
+}
+
+@utility text-gradient {
+  background: linear-gradient(100deg, var(--primary), var(--accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility bg-gradient-brand {
+  background: linear-gradient(120deg, var(--primary), var(--accent));
+}

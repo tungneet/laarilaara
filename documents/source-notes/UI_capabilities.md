@@ -1,0 +1,3 @@
+there would be different theme for boys and different for girls, not assuming that boys and girls will use it but their parents. Maybe for boys theme could be bluish and for girls little (not too much) pinkish, but not too much, just a little.
+Since we are using web app only so it needs to be very effortless, we can burn little more there if we need to...afterall the UX needs to be worldclass. Better than any matrimony app exists in world.
+React + Next.js

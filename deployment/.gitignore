@@ -1,0 +1,16 @@
+# Secrets — never commit real credentials.
+.env.local
+.env
+!.env.local.example
+!.env.example
+
+# Terraform / IaC state and working files (added once IaC exists here).
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+
+# Build artifacts
+*.zip
+.aws-sam/

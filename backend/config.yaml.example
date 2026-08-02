@@ -1,0 +1,44 @@
+# LaariLaara configuration template.
+#
+# This file IS committed to git — copy it to config.yaml (gitignored) and edit
+# locally. Even so, never put secrets (API keys, credentials, tokens) in either
+# file: secrets go in backend/.env (see .env.example) or Secrets Manager.
+# Any value here can be overridden per environment with an env var, e.g.:
+#   LAARA_AI__PROVIDER=bedrock
+#   LAARA_STORAGE__DYNAMODB_TABLE_NAME=laarilaara-prod
+
+service_name: laarilaara-api
+api_version: v1
+log_level: INFO
+aws_region: us-east-1
+check_dependencies_on_ready: false
+
+ai:
+  provider: fake            # fake | openai | bedrock — central AI engine channel (app/core/ai_engine.py)
+  embedding_model: amazon.titan-embed-text-v2:0
+  embedding_fallback_model: text-embedding-3-small
+  embedding_dimensions: 1024
+  chat_model: anthropic.claude-3-5-haiku
+  request_timeout_seconds: 20
+  openai_base_url: null     # set for a local OpenAI-compatible endpoint
+  openai_chat_model: gpt-4o-mini   # used only when provider: openai
+  moderation_provider: fake        # fake | openai — omni-moderation-latest when openai
+  moderation_block_threshold: 0.5  # highest flagged category score that blocks a write
+
+storage:
+  dynamodb_table_name: laarilaara-local
+  dynamodb_endpoint_url: null   # e.g. http://localhost:8000 for DynamoDB Local
+  s3_endpoint_url: null         # local override only; production uses AWS S3
+  media_bucket_name: laarilaara-local-media
+  artifacts_bucket_name: laarilaara-local-artifacts
+  embeddings_bucket_name: laarilaara-local-embeddings
+
+limits:
+  default_page_size: 20
+  max_page_size: 100
+  auth_challenges_per_hour: 10
+  ai_jobs_per_day: 50
+
+recommendations:
+  rebuild_cron: "cron(0 3 * * ? *)"
+  candidates_per_profile: 100
