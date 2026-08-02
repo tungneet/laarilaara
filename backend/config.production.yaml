@@ -1,0 +1,36 @@
+# Production configuration (non-secret, safe to commit).
+#
+# Loaded by app.core.config.Settings when LAARA_CONFIG_FILE=config.production.yaml
+# (set as a Lambda environment variable by Terraform). Secrets (JWT signing key,
+# webhook secret, OpenAI key) are NEVER here — they're set as separate Lambda
+# environment variables, generated/managed by Terraform state (which is itself
+# gitignored, see deployment/.gitignore).
+
+service_name: laarilaara-api
+api_version: v1
+log_level: INFO
+aws_region: us-east-1
+check_dependencies_on_ready: true
+
+cors_allowed_origins:
+  - https://laarilaara.netlify.app   # placeholder — update once the real Netlify domain is known
+
+ai:
+  provider: openai
+  chat_model: anthropic.claude-3-5-haiku
+  request_timeout_seconds: 20
+  openai_chat_model: gpt-4o-mini
+  moderation_provider: openai
+  moderation_block_threshold: 0.5
+
+storage:
+  dynamodb_table_name: laarilaara-prod
+  media_bucket_name: laarilaara-prod-media
+  artifacts_bucket_name: laarilaara-prod-artifacts
+  embeddings_bucket_name: laarilaara-prod-embeddings
+
+limits:
+  default_page_size: 20
+  max_page_size: 100
+  auth_challenges_per_hour: 10
+  ai_jobs_per_day: 50
