@@ -39,7 +39,11 @@ variable "embeddings_bucket_name" {
 variable "cors_allowed_origins" {
   description = "Origins allowed to call the API and the media bucket (CORS)."
   type        = list(string)
-  default     = ["https://laarilaara.netlify.app"]
+  default = [
+    "https://leafy-croissant-452e0c.netlify.app",
+    "https://laarilaara.com",
+    "https://www.laarilaara.com",
+  ]
 }
 
 variable "lambda_memory_mb" {

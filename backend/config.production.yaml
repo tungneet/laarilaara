@@ -13,7 +13,9 @@ aws_region: us-east-1
 check_dependencies_on_ready: true
 
 cors_allowed_origins:
-  - https://laarilaara.netlify.app   # placeholder — update once the real Netlify domain is known
+  - https://leafy-croissant-452e0c.netlify.app
+  - https://laarilaara.com
+  - https://www.laarilaara.com
 
 ai:
   provider: openai
