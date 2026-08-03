@@ -1,0 +1,14 @@
+# Netlify deployment configuration for the Next.js frontend in this monorepo.
+# The Next.js adapter is auto-detected by Netlify; no publish directory or
+# functions directory should be configured manually.
+
+[build]
+  base = "frontend"
+  command = "npm run build"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# Keep Next.js App Router paths working when loaded directly or refreshed.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
