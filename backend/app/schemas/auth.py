@@ -20,7 +20,7 @@ class RegisterResponse(BaseModel):
     """
 
     status: str = "verification_pending"
-    challenge_id: str
+    challenge_id: str | None = None
     message: str = (
         "If this email can be registered, a verification code has been sent."
     )
@@ -55,7 +55,7 @@ class PhoneStartResponse(BaseModel):
     """
 
     status: str = "verification_pending"
-    challenge_id: str
+    challenge_id: str | None = None
     message: str = (
         "If this phone number can be registered, a verification code has been sent."
     )
