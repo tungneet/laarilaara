@@ -3,9 +3,9 @@ resource "aws_apigatewayv2_api" "http_api" {
   protocol_type = "HTTP"
 
   cors_configuration {
-    allow_origins = var.cors_allowed_origins
-    allow_methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
-    allow_headers = ["*"]
+    allow_origins     = var.cors_allowed_origins
+    allow_methods     = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+    allow_headers     = ["*"]
     allow_credentials = true
     max_age           = 3600
   }
@@ -43,13 +43,13 @@ resource "aws_apigatewayv2_stage" "default" {
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.api_gw.arn
     format = jsonencode({
-      requestId      = "$context.requestId"
-      ip              = "$context.identity.sourceIp"
-      requestTime     = "$context.requestTime"
-      httpMethod      = "$context.httpMethod"
-      routeKey        = "$context.routeKey"
-      status          = "$context.status"
-      responseLength  = "$context.responseLength"
+      requestId        = "$context.requestId"
+      ip               = "$context.identity.sourceIp"
+      requestTime      = "$context.requestTime"
+      httpMethod       = "$context.httpMethod"
+      routeKey         = "$context.routeKey"
+      status           = "$context.status"
+      responseLength   = "$context.responseLength"
       integrationError = "$context.integrationErrorMessage"
     })
   }

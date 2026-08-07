@@ -61,6 +61,13 @@ class AIConfig(BaseModel):
     moderation_block_threshold: float = 0.5
 
 
+class EmailConfig(BaseModel):
+    """Outbound transactional email configuration (non-secret)."""
+
+    provider: Literal["log", "ses"] = "log"
+    sender: str = "no-reply@laarilaara.com"
+
+
 class StorageConfig(BaseModel):
     dynamodb_table_name: str = "laarilaara-local"
     dynamodb_endpoint_url: str | None = None  # e.g. http://localhost:8000 local
@@ -128,6 +135,7 @@ class Settings(BaseSettings):
 
     # Structural config groups (populated from config.yaml, overridable by env)
     ai: AIConfig = AIConfig()
+    email: EmailConfig = EmailConfig()
     storage: StorageConfig = StorageConfig()
     limits: LimitsConfig = LimitsConfig()
     recommendations: RecommendationsConfig = RecommendationsConfig()
@@ -136,6 +144,11 @@ class Settings(BaseSettings):
     # Secrets: environment-only. Never add these to config.yaml.
     openai_api_key: str | None = None
     jwt_secret: str = _INSECURE_DEFAULT_JWT_SECRET
+    # Google OAuth ("Sign in with Google"). The client ID is not secret (it's
+    # sent to the browser too, as NEXT_PUBLIC_GOOGLE_CLIENT_ID on the frontend)
+    # but lives here rather than config.yaml since it's per-environment (each
+    # Google Cloud project/OAuth client is tied to its own authorized origins).
+    google_oauth_client_id: str | None = None
     # Single shared HMAC secret for all §14 webhook providers. A real deployment
     # would hold one secret per provider (from that provider's dashboard) in
     # Secrets Manager — deferred until a real provider is actually wired up;

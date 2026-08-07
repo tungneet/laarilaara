@@ -55,6 +55,13 @@ def create_email_verification_challenge(account_id: str, code: str) -> Challenge
     return _create_challenge(account_id, code, purpose="email_verification")
 
 
+def create_phone_auth_challenge(account_id: str, code: str) -> Challenge:
+    """One challenge purpose covers both first-time phone signup and every
+    later phone sign-in — phone auth is always OTP-only (no password), so
+    "verify the code" and "log in" are the same action."""
+    return _create_challenge(account_id, code, purpose="phone_auth")
+
+
 def create_password_reset_challenge(account_id: str, code: str) -> Challenge:
     return _create_challenge(account_id, code, purpose="password_reset")
 

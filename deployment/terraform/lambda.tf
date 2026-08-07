@@ -34,15 +34,16 @@ resource "aws_lambda_function" "api" {
 
   environment {
     variables = {
-      LAARA_ENVIRONMENT      = var.environment
-      LAARA_CONFIG_FILE      = "config.yaml" # bundled by deployment/build_lambda.py
-      LAARA_JWT_SECRET       = random_password.jwt_secret.result
-      LAARA_WEBHOOK_SIGNING_SECRET = random_password.webhook_secret.result
-      LAARA_OPENAI_API_KEY   = var.openai_api_key
-      LAARA_STORAGE__DYNAMODB_TABLE_NAME  = aws_dynamodb_table.main.name
+      LAARA_ENVIRONMENT                     = var.environment
+      LAARA_CONFIG_FILE                     = "config.yaml" # bundled by deployment/build_lambda.py
+      LAARA_JWT_SECRET                      = random_password.jwt_secret.result
+      LAARA_WEBHOOK_SIGNING_SECRET          = random_password.webhook_secret.result
+      LAARA_OPENAI_API_KEY                  = var.openai_api_key
+      LAARA_STORAGE__DYNAMODB_TABLE_NAME    = aws_dynamodb_table.main.name
       LAARA_STORAGE__MEDIA_BUCKET_NAME      = aws_s3_bucket.buckets["media"].bucket
       LAARA_STORAGE__ARTIFACTS_BUCKET_NAME  = aws_s3_bucket.buckets["artifacts"].bucket
       LAARA_STORAGE__EMBEDDINGS_BUCKET_NAME = aws_s3_bucket.buckets["embeddings"].bucket
+      LAARA_GOOGLE_OAUTH_CLIENT_ID          = var.google_oauth_client_id
     }
   }
 

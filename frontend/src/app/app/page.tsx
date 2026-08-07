@@ -40,7 +40,7 @@ export default function AppHome() {
     <div className="space-y-6">
       <header>
         <h1 className="font-display text-[28px] font-bold tracking-tight">
-          Welcome{account ? `, ${account.email.split("@")[0]}` : ""}
+          Welcome{account ? `, ${account.display_name || account.email?.split("@")[0] || "back"}` : ""}
         </h1>
         <p className="mt-1 text-sm text-ink-soft">
           Manage your family&apos;s profiles and introductions from one place.

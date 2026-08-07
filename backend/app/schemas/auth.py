@@ -34,6 +34,28 @@ class LoginRequest(BaseModel):
     password: str = Field(min_length=1, max_length=256)
 
 
+class GoogleAuthRequest(BaseModel):
+    id_token: str = Field(min_length=1)
+
+
+class PhoneStartRequest(BaseModel):
+    phone: str = Field(min_length=8, max_length=20)
+
+
+class PhoneStartResponse(BaseModel):
+    """Deliberately generic: never reveals whether the phone is already registered."""
+
+    status: str = "verification_pending"
+    message: str = (
+        "If this phone number can be registered, a verification code has been sent."
+    )
+
+
+class PhoneVerifyRequest(BaseModel):
+    challenge_id: str = Field(min_length=1)
+    code: str = Field(min_length=4, max_length=16)
+
+
 class LoginResponse(BaseModel):
     access_token: str
     refresh_token: str

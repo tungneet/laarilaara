@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { AuthCard, Field, FormError, SelectField, SubmitButton } from "@/components/auth-form";
+import { GoogleSignInButton } from "@/components/google-signin-button";
+import { PhoneAuthForm } from "@/components/phone-auth-form";
 import { SiteNav } from "@/components/site-nav";
-import { api } from "@/lib/api";
+import { api, IS_LOCAL_API } from "@/lib/api";
 import { authErrorMessage, useAuth } from "@/lib/auth";
 
 type Step = "register" | "verify";
@@ -52,7 +54,8 @@ export default function SignUpPage() {
     try {
       await register(email, password, displayName, gender);
       setCredentials({ email, password });
-      await fetchDevCode(email);
+      if (IS_LOCAL_API) await fetchDevCode(email);
+      else setDevFill(null);
       setStep("verify");
     } catch (err) {
       setError(authErrorMessage(err));
@@ -90,6 +93,8 @@ export default function SignUpPage() {
             title="Create your account"
             subtitle="One account can manage profiles for yourself or your family."
           >
+            <GoogleSignInButton onError={setError} />
+            <PhoneAuthForm />
             <form onSubmit={onRegister} noValidate>
               <FormError message={error} />
               <Field
@@ -142,11 +147,13 @@ export default function SignUpPage() {
             title="Verify your email"
             subtitle="We sent a verification code to your email address. Enter it below along with the challenge ID from the same message."
           >
-            <div className="glass mb-5 rounded-xl px-4 py-3 text-[12.5px] leading-relaxed text-ink-soft">
-              <span className="font-semibold text-ink">Local development:</span>{" "}
-              no real email is sent — the fields below are pre-filled straight
-              from the dev server. Just hit verify.
-            </div>
+            {IS_LOCAL_API && devFill && (
+              <div className="glass mb-5 rounded-xl px-4 py-3 text-[12.5px] leading-relaxed text-ink-soft">
+                <span className="font-semibold text-ink">Local development:</span>{" "}
+                no real email is sent — the fields below are pre-filled straight
+                from the dev server. Just hit verify.
+              </div>
+            )}
             <form onSubmit={onVerify} noValidate>
               <FormError message={error} />
               <Field

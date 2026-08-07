@@ -58,7 +58,7 @@ function AccountSection() {
         </div>
         <div>
           <span className="mb-1 block text-[13px] font-medium text-ink-soft">Email</span>
-          <p className="text-[14px]">{account.email}</p>
+          <p className="text-[14px]">{account.email || "—"}</p>
         </div>
         <div>
           <span className="mb-1 block text-[13px] font-medium text-ink-soft">Plan</span>
@@ -283,6 +283,16 @@ function PasswordSection() {
   const [done, setDone] = useState(false);
 
   if (!account) return null;
+  if (!account.email) {
+    return (
+      <SectionCard
+        title="Password"
+        description="This account signed in by phone/Google and has no password set."
+      >
+        <p className="text-[13px] text-ink-soft">Nothing to manage here yet.</p>
+      </SectionCard>
+    );
+  }
 
   return (
     <SectionCard
@@ -297,7 +307,7 @@ function PasswordSection() {
           type="button"
           disabled={requestReset.isPending}
           onClick={() =>
-            requestReset.mutate(account.email, { onSuccess: () => setSent(true) })
+            requestReset.mutate(account.email!, { onSuccess: () => setSent(true) })
           }
           className="glass cursor-pointer rounded-full px-5 py-2 text-[13px] font-semibold disabled:opacity-60"
         >

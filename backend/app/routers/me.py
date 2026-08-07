@@ -63,6 +63,7 @@ def _to_response(account) -> MeResponse:
     return MeResponse(
         id=account.id,
         email=account.email,
+        phone=account.phone,
         display_name=account.display_name,
         gender=account.gender,
         status=account.status.value,

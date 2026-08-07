@@ -11,6 +11,9 @@
   NODE_VERSION = "22"
   # Public browser-facing endpoint; this is intentionally not a secret.
   NEXT_PUBLIC_API_BASE_URL = "https://3uehd85j19.execute-api.us-east-1.amazonaws.com"
+  # Google OAuth Web client ID ("Sign in with Google") — not secret either;
+  # it's the same value sent to the browser by Google's own SDK.
+  NEXT_PUBLIC_GOOGLE_CLIENT_ID = "672740096578-uj83hruqs8vglpu7eoqeiqqk6cj7ls76.apps.googleusercontent.com"
 
 # Keep Next.js App Router paths working when loaded directly or refreshed.
 [[plugins]]

@@ -132,7 +132,11 @@ def accept_invitation(token: str, accepting_account_id: str) -> dict:
         raise InvitationNotPendingError(item["id"])
 
     account = accounts_repo.get_account_by_id(accepting_account_id)
-    if account is None or item["invitedEmail"].strip().lower() != account.email.strip().lower():
+    if (
+        account is None
+        or account.email is None
+        or item["invitedEmail"].strip().lower() != account.email.strip().lower()
+    ):
         raise InvitationEmailMismatchError(item["id"])
 
     invitations_repo.mark_accepted(item["profileId"], item["id"], accepting_account_id)

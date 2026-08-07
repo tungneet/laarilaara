@@ -1,8 +1,8 @@
 locals {
   buckets = {
-    media       = var.media_bucket_name
-    artifacts   = var.artifacts_bucket_name
-    embeddings  = var.embeddings_bucket_name
+    media      = var.media_bucket_name
+    artifacts  = var.artifacts_bucket_name
+    embeddings = var.embeddings_bucket_name
   }
 }
 

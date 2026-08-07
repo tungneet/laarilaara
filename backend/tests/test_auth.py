@@ -335,3 +335,177 @@ def test_me_requires_bearer_token(dynamo_table):
     resp = client.get("/v1/me")
     assert resp.status_code == 401
     assert resp.json()["code"] == "UNAUTHENTICATED"
+
+
+# ---- Google OAuth sign-in ---------------------------------------------------
+
+
+def _fake_google_payload(email: str, sub: str = "google-subject-1", email_verified: bool = True) -> dict:
+    return {"email": email, "email_verified": email_verified, "sub": sub, "name": "Google User"}
+
+
+def test_google_signin_creates_new_active_account(dynamo_table, monkeypatch):
+    monkeypatch.setattr(
+        "app.services.auth.get_settings",
+        lambda: type("S", (), {"google_oauth_client_id": "test-client-id"})(),
+    )
+    from app.repositories import accounts as accounts_repo
+
+    payload = _fake_google_payload("newgoogleuser@example.com")
+    monkeypatch.setattr(
+        "app.services.auth.google_id_token.verify_oauth2_token", lambda *a, **k: payload
+    )
+
+    resp = client.post("/v1/auth/oauth/google", json={"id_token": "fake-token"})
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["access_token"]
+    assert body["refresh_token"]
+
+    account_id = accounts_repo.get_account_id_by_email("newgoogleuser@example.com")
+    account = accounts_repo.get_account_by_id(account_id)
+    assert account.status.value == "active"
+    assert account.oauth_provider == "google"
+    assert account.oauth_subject == "google-subject-1"
+
+
+def test_google_signin_links_existing_email_password_account(dynamo_table, monkeypatch):
+    email, password = "linkme@example.com", "correct horse battery"
+    _register_verify_login(monkeypatch, email, password)
+
+    monkeypatch.setattr(
+        "app.services.auth.get_settings",
+        lambda: type("S", (), {"google_oauth_client_id": "test-client-id"})(),
+    )
+    payload = _fake_google_payload(email, sub="google-subject-2")
+    monkeypatch.setattr(
+        "app.services.auth.google_id_token.verify_oauth2_token", lambda *a, **k: payload
+    )
+
+    resp = client.post("/v1/auth/oauth/google", json={"id_token": "fake-token"})
+    assert resp.status_code == 200
+
+    from app.repositories import accounts as accounts_repo
+
+    account_id = accounts_repo.get_account_id_by_email(email)
+    account = accounts_repo.get_account_by_id(account_id)
+    assert account.oauth_provider == "google"
+    assert account.oauth_subject == "google-subject-2"
+    # The original password still works — linking doesn't disturb it.
+    login_resp = client.post("/v1/auth/login", json={"email": email, "password": password})
+    assert login_resp.status_code == 200
+
+
+def test_google_signin_rejects_unverified_email(dynamo_table, monkeypatch):
+    monkeypatch.setattr(
+        "app.services.auth.get_settings",
+        lambda: type("S", (), {"google_oauth_client_id": "test-client-id"})(),
+    )
+    payload = _fake_google_payload("unverified@example.com", email_verified=False)
+    monkeypatch.setattr(
+        "app.services.auth.google_id_token.verify_oauth2_token", lambda *a, **k: payload
+    )
+
+    resp = client.post("/v1/auth/oauth/google", json={"id_token": "fake-token"})
+    assert resp.status_code == 401
+    assert resp.json()["code"] == "GOOGLE_TOKEN_INVALID"
+
+
+def test_google_signin_rejects_invalid_token(dynamo_table, monkeypatch):
+    monkeypatch.setattr(
+        "app.services.auth.get_settings",
+        lambda: type("S", (), {"google_oauth_client_id": "test-client-id"})(),
+    )
+
+    def raise_value_error(*a, **k):
+        raise ValueError("Token used too late")
+
+    monkeypatch.setattr("app.services.auth.google_id_token.verify_oauth2_token", raise_value_error)
+
+    resp = client.post("/v1/auth/oauth/google", json={"id_token": "garbage"})
+    assert resp.status_code == 401
+    assert resp.json()["code"] == "GOOGLE_TOKEN_INVALID"
+
+
+def test_google_signin_disabled_without_client_id(dynamo_table, monkeypatch):
+    monkeypatch.setattr(
+        "app.services.auth.get_settings",
+        lambda: type("S", (), {"google_oauth_client_id": None})(),
+    )
+    resp = client.post("/v1/auth/oauth/google", json={"id_token": "whatever"})
+    assert resp.status_code == 401
+    assert resp.json()["code"] == "GOOGLE_TOKEN_INVALID"
+
+
+# ---- Phone (SMS OTP) sign-in ------------------------------------------------
+
+
+def _start_phone_and_capture(monkeypatch, phone: str) -> tuple[str, str]:
+    captured: dict[str, str] = {}
+
+    def fake_send(to_value: str, code: str, challenge_id: str) -> None:
+        captured["code"] = code
+        captured["challenge_id"] = challenge_id
+
+    monkeypatch.setattr("app.services.auth.send_verification_code", fake_send)
+    resp = client.post("/v1/auth/phone/start", json={"phone": phone})
+    assert resp.status_code == 202
+    return captured["challenge_id"], captured["code"]
+
+
+def test_phone_start_creates_new_pending_account(dynamo_table, monkeypatch):
+    from app.repositories import accounts as accounts_repo
+
+    _start_phone_and_capture(monkeypatch, "+14155550100")
+
+    account_id = accounts_repo.get_account_id_by_phone("+14155550100")
+    assert account_id is not None
+    account = accounts_repo.get_account_by_id(account_id)
+    assert account.status.value == "pending_verification"
+    assert account.phone == "+14155550100"
+    assert account.email is None
+
+
+def test_phone_verify_activates_and_logs_in(dynamo_table, monkeypatch):
+    challenge_id, code = _start_phone_and_capture(monkeypatch, "+14155550101")
+
+    resp = client.post("/v1/auth/phone/verify", json={"challenge_id": challenge_id, "code": code})
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["access_token"]
+    assert body["refresh_token"]
+
+    from app.repositories import accounts as accounts_repo
+
+    account_id = accounts_repo.get_account_id_by_phone("+14155550101")
+    account = accounts_repo.get_account_by_id(account_id)
+    assert account.status.value == "active"
+
+
+def test_phone_verify_rejects_wrong_code(dynamo_table, monkeypatch):
+    challenge_id, _code = _start_phone_and_capture(monkeypatch, "+14155550102")
+
+    resp = client.post("/v1/auth/phone/verify", json={"challenge_id": challenge_id, "code": "000000"})
+    assert resp.status_code == 400
+    assert resp.json()["code"] == "CHALLENGE_INVALID"
+
+
+def test_phone_start_rejects_invalid_phone_shape(dynamo_table):
+    resp = client.post("/v1/auth/phone/start", json={"phone": "not-a-phone-number"})
+    assert resp.status_code == 422
+    assert resp.json()["code"] == "PHONE_NUMBER_INVALID"
+
+
+def test_phone_start_on_existing_phone_reuses_account(dynamo_table, monkeypatch):
+    from app.repositories import accounts as accounts_repo
+
+    challenge_id, code = _start_phone_and_capture(monkeypatch, "+14155550103")
+    client.post("/v1/auth/phone/verify", json={"challenge_id": challenge_id, "code": code})
+    first_account_id = accounts_repo.get_account_id_by_phone("+14155550103")
+
+    # A second sign-in attempt with the same phone must reuse the same
+    # account, not create a duplicate.
+    _start_phone_and_capture(monkeypatch, "+14155550103")
+    second_account_id = accounts_repo.get_account_id_by_phone("+14155550103")
+    assert first_account_id == second_account_id
+

@@ -64,7 +64,19 @@ variable "openai_api_key" {
   default     = ""
 }
 
+variable "google_oauth_client_id" {
+  description = "Google OAuth Web client ID (\"Sign in with Google\"), set via TF_VAR_google_oauth_client_id — not secret, but per-environment."
+  type        = string
+  default     = ""
+}
+
 variable "log_retention_days" {
   type    = number
   default = 14
+}
+
+variable "email_domain" {
+  description = "Domain verified in Amazon SES for transactional email."
+  type        = string
+  default     = "laarilaara.com"
 }

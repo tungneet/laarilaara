@@ -59,6 +59,24 @@ data "aws_iam_policy_document" "lambda_app_access" {
     actions   = ["s3:ListBucket"]
     resources = [for b in aws_s3_bucket.buckets : b.arn]
   }
+
+  statement {
+    sid       = "SesTransactionalEmail"
+    effect    = "Allow"
+    actions   = ["ses:SendEmail", "ses:SendRawEmail"]
+    resources = [local.ses_identity_arn]
+  }
+
+  statement {
+    sid    = "SnsTransactionalSms"
+    effect = "Allow"
+    # SNS SMS publishes directly to a phone number, not a topic/resource ARN
+    # we control, so this can't be scoped narrower than "*" — standard for
+    # transactional SMS via SNS. Restricted to just sns:Publish (no topic
+    # management, subscriptions, etc.).
+    actions   = ["sns:Publish"]
+    resources = ["*"]
+  }
 }
 
 resource "aws_iam_role_policy" "lambda_app_access" {

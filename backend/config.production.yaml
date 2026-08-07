@@ -25,6 +25,10 @@ ai:
   moderation_provider: openai
   moderation_block_threshold: 0.5
 
+email:
+  provider: ses
+  sender: no-reply@laarilaara.com
+
 storage:
   dynamodb_table_name: laarilaara-prod
   media_bucket_name: laarilaara-prod-media

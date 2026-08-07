@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { AuthCard, Field, FormError, SubmitButton } from "@/components/auth-form";
+import { GoogleSignInButton } from "@/components/google-signin-button";
+import { PhoneAuthForm } from "@/components/phone-auth-form";
 import { SiteNav } from "@/components/site-nav";
 import { authErrorMessage, useAuth } from "@/lib/auth";
 
@@ -36,6 +38,8 @@ export default function SignInPage() {
           title="Welcome back"
           subtitle="Sign in to continue your family's search."
         >
+          <GoogleSignInButton onError={setError} />
+          <PhoneAuthForm />
           <form onSubmit={onSubmit} noValidate>
             <FormError message={error} />
             <Field

@@ -44,9 +44,19 @@ def _utcnow() -> datetime:
 
 class Account(BaseModel):
     id: str
-    email: str
+    # Exactly one of email/phone is guaranteed to be set (whichever the
+    # account was created with) — both optional so phone-only accounts
+    # don't need a placeholder email, and vice versa.
+    email: str | None = None
+    phone: str | None = None
     display_name: str | None = None
     gender: str | None = None
+    # Set when the account was created via (or later linked to) an OAuth
+    # provider, e.g. "google". `oauth_subject` is that provider's stable
+    # user id (Google's `sub` claim) — used to detect the same external
+    # identity even if the account's email address later changes.
+    oauth_provider: str | None = None
+    oauth_subject: str | None = None
     status: AccountStatus = AccountStatus.PENDING_VERIFICATION
     tier: AccountTier = AccountTier.FREE
     role: AccountRole = AccountRole.MEMBER

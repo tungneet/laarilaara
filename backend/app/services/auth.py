@@ -1,14 +1,19 @@
 """Authentication application services."""
 from __future__ import annotations
 
+from google.auth.transport import requests as google_requests
+from google.oauth2 import id_token as google_id_token
+
+from app.core.config import get_settings
 from app.core.logging import get_logger
 from app.core.security import create_access_token, hash_password, verify_password
-from app.domain.accounts import AccountStatus
+from app.domain.accounts import Account, AccountStatus
 from app.repositories import accounts as accounts_repo
 from app.repositories import challenges as challenges_repo
 from app.repositories import sessions as sessions_repo
 from app.services.notifications import (
     generate_numeric_code,
+    is_phone_number,
     send_verification_code,
 )
 
@@ -21,6 +26,16 @@ class InvalidCredentialsError(Exception):
 
 class AccountNotVerifiedError(Exception):
     pass
+
+
+class PhoneNumberInvalidError(Exception):
+    """The supplied phone number isn't a plausible E.164 number
+    (e.g. +14155550123)."""
+
+
+class GoogleTokenInvalidError(Exception):
+    """The Google ID token failed signature/audience/expiry verification, or
+    Google reports the token's email as unverified."""
 
 
 def register_account(
@@ -69,6 +84,14 @@ def verify_challenge(challenge_id: str, code: str) -> None:
     accounts_repo.mark_account_active(account_id)
 
 
+def _issue_session(account: Account) -> tuple[str, str, int]:
+    session_id, refresh_token = sessions_repo.create_session(account.id)
+    access_token, expires_in = create_access_token(
+        account_id=account.id, session_id=session_id, tier=account.tier.value, role=account.role.value
+    )
+    return access_token, refresh_token, expires_in
+
+
 def login(email: str, password: str) -> tuple[str, str, int]:
     """Verify credentials and issue a new session.
 
@@ -90,11 +113,111 @@ def login(email: str, password: str) -> tuple[str, str, int]:
     if account.status != AccountStatus.ACTIVE:
         raise AccountNotVerifiedError()
 
-    session_id, refresh_token = sessions_repo.create_session(account.id)
-    access_token, expires_in = create_access_token(
-        account_id=account.id, session_id=session_id, tier=account.tier.value, role=account.role.value
+    return _issue_session(account)
+
+
+def login_with_google(google_id_token_value: str) -> tuple[str, str, int]:
+    """Verify a Google Identity Services ID token and issue a session.
+
+    First sign-in for a given email creates a new, immediately-``active``
+    account (Google already verified the email address, so our own
+    email-verification challenge is skipped). A later Google sign-in with an
+    email that already has a (e.g. password-based) account simply links that
+    account to this Google identity rather than creating a duplicate.
+
+    Raises ``GoogleTokenInvalidError`` if the token doesn't verify or its
+    email is unverified per Google.
+    """
+    settings = get_settings()
+    if not settings.google_oauth_client_id:
+        raise GoogleTokenInvalidError("Google sign-in is not configured")
+
+    try:
+        payload = google_id_token.verify_oauth2_token(
+            google_id_token_value,
+            google_requests.Request(),
+            audience=settings.google_oauth_client_id,
+        )
+    except Exception as exc:  # noqa: BLE001 - any verification failure is the same generic error
+        raise GoogleTokenInvalidError(str(exc)) from exc
+
+    if not payload.get("email_verified", False):
+        raise GoogleTokenInvalidError("Google account email is not verified")
+
+    email = payload["email"]
+    subject = payload["sub"]
+    display_name = payload.get("name")
+
+    account_id = accounts_repo.get_account_id_by_email(email)
+    if account_id is None:
+        account = accounts_repo.create_oauth_account(
+            email=email,
+            oauth_provider="google",
+            oauth_subject=subject,
+            display_name=display_name,
+        )
+        return _issue_session(account)
+
+    account = accounts_repo.get_account_by_id(account_id)
+    if account is None:
+        raise GoogleTokenInvalidError("account lookup failed")
+
+    if account.oauth_provider != "google":
+        accounts_repo.set_oauth_identity(account.id, "google", subject)
+    if account.status != AccountStatus.ACTIVE:
+        accounts_repo.mark_account_active(account.id)
+        account = accounts_repo.get_account_by_id(account.id)
+
+    return _issue_session(account)
+
+
+def start_phone_auth(phone: str) -> None:
+    """Start phone sign-in/signup. Always returns (no enumeration of whether
+    the phone is already registered), same generic-response convention as
+    `register_account`.
+
+    Phone auth has no password step at all — it's OTP-only, for both a
+    brand-new phone number (implicitly creates the account) and a returning
+    one (just issues a fresh login code). Raises ``PhoneNumberInvalidError``
+    if the number isn't a plausible E.164 number (a client-side format
+    mistake, not an enumeration risk — checked before any account lookup).
+    """
+    normalized = phone.strip()
+    if not is_phone_number(normalized):
+        raise PhoneNumberInvalidError(phone)
+
+    account_id = accounts_repo.get_account_id_by_phone(normalized)
+    if account_id is None:
+        account = accounts_repo.create_phone_account(normalized)
+    else:
+        account = accounts_repo.get_account_by_id(account_id)
+        if account is None:
+            raise PhoneNumberInvalidError(phone)
+
+    code = generate_numeric_code()
+    challenge = challenges_repo.create_phone_auth_challenge(account.id, code)
+    send_verification_code(normalized, code, challenge.id)
+
+
+def verify_phone_and_login(challenge_id: str, code: str) -> tuple[str, str, int]:
+    """Verify a phone-auth code and issue a session — this IS the login step
+    for phone sign-in (there's no separate password to check afterwards).
+
+    Raises ``challenges_repo.ChallengeNotFoundError``/``ChallengeInvalidError``
+    on any failure, same as email-challenge verification; the router maps
+    both to the same generic error response.
+    """
+    account_id, _ = challenges_repo.verify_and_consume(
+        challenge_id, code, expected_purpose="phone_auth"
     )
-    return access_token, refresh_token, expires_in
+    account = accounts_repo.get_account_by_id(account_id)
+    if account is None:
+        raise challenges_repo.ChallengeInvalidError("account_missing")
+    if account.status != AccountStatus.ACTIVE:
+        accounts_repo.mark_account_active(account.id)
+        account = accounts_repo.get_account_by_id(account.id)
+
+    return _issue_session(account)
 
 
 def refresh(refresh_token: str) -> tuple[str, str, int]:

@@ -10,10 +10,14 @@ from app.repositories import sessions as sessions_repo
 from app.schemas.auth import (
     ForgotPasswordRequest,
     ForgotPasswordResponse,
+    GoogleAuthRequest,
     LoginRequest,
     LoginResponse,
     LogoutAllResponse,
     LogoutResponse,
+    PhoneStartRequest,
+    PhoneStartResponse,
+    PhoneVerifyRequest,
     RefreshRequest,
     RefreshResponse,
     RegisterRequest,
@@ -55,6 +59,19 @@ _INVALID_RESET_ERROR = ApiError(
     status=status.HTTP_400_BAD_REQUEST,
     code="CHALLENGE_INVALID",
     title="Invalid or expired reset code",
+)
+
+_GOOGLE_TOKEN_INVALID_ERROR = ApiError(
+    status=status.HTTP_401_UNAUTHORIZED,
+    code="GOOGLE_TOKEN_INVALID",
+    title="Google sign-in failed",
+)
+
+_PHONE_NUMBER_INVALID_ERROR = ApiError(
+    status=status.HTTP_422_UNPROCESSABLE_ENTITY,
+    code="PHONE_NUMBER_INVALID",
+    title="That doesn't look like a valid phone number",
+    detail="Use E.164 format, e.g. +14155550123.",
 )
 
 
@@ -107,6 +124,62 @@ async def login(payload: LoginRequest) -> LoginResponse:
         raise _INVALID_CREDENTIALS_ERROR from exc
     except auth_service.AccountNotVerifiedError as exc:
         raise _ACCOUNT_NOT_VERIFIED_ERROR from exc
+
+    return LoginResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        expires_in=expires_in,
+    )
+
+
+@router.post(
+    "/oauth/google",
+    response_model=LoginResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def login_with_google(payload: GoogleAuthRequest) -> LoginResponse:
+    try:
+        access_token, refresh_token, expires_in = auth_service.login_with_google(
+            payload.id_token
+        )
+    except auth_service.GoogleTokenInvalidError as exc:
+        raise _GOOGLE_TOKEN_INVALID_ERROR from exc
+
+    return LoginResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        expires_in=expires_in,
+    )
+
+
+@router.post(
+    "/phone/start",
+    response_model=PhoneStartResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def start_phone_auth(payload: PhoneStartRequest) -> PhoneStartResponse:
+    try:
+        auth_service.start_phone_auth(payload.phone)
+    except auth_service.PhoneNumberInvalidError as exc:
+        raise _PHONE_NUMBER_INVALID_ERROR from exc
+    return PhoneStartResponse()
+
+
+@router.post(
+    "/phone/verify",
+    response_model=LoginResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def verify_phone_auth(payload: PhoneVerifyRequest) -> LoginResponse:
+    try:
+        access_token, refresh_token, expires_in = auth_service.verify_phone_and_login(
+            payload.challenge_id, payload.code
+        )
+    except (
+        challenges_repo.ChallengeNotFoundError,
+        challenges_repo.ChallengeInvalidError,
+    ) as exc:
+        raise _INVALID_CHALLENGE_ERROR from exc
 
     return LoginResponse(
         access_token=access_token,

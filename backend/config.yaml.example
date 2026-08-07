@@ -25,6 +25,10 @@ ai:
   moderation_provider: fake        # fake | openai — omni-moderation-latest when openai
   moderation_block_threshold: 0.5  # highest flagged category score that blocks a write
 
+email:
+  provider: log                    # log for local/dev; ses for staging/production
+  sender: no-reply@laarilaara.com
+
 storage:
   dynamodb_table_name: laarilaara-local
   dynamodb_endpoint_url: null   # e.g. http://localhost:8000 for DynamoDB Local

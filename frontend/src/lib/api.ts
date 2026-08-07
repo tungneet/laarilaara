@@ -9,6 +9,10 @@
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000";
 
+export const IS_LOCAL_API = /^https?:\/\/(?:localhost|127\.0\.0\.1)(?::|\/|$)/i.test(
+  API_BASE_URL,
+);
+
 /** RFC 9457 problem+json body produced by the backend. */
 export interface Problem {
   type: string;

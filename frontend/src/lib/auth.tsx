@@ -23,7 +23,8 @@ const STORAGE_KEY = "ll-auth";
 
 export interface Account {
   id: string;
-  email: string;
+  email: string | null;
+  phone: string | null;
   display_name: string | null;
   gender: string | null;
   status: string;
@@ -63,6 +64,9 @@ interface AuthContextValue {
   /** True while the persisted session is being restored on first load. */
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: (idToken: string) => Promise<void>;
+  startPhoneAuth: (phone: string) => Promise<void>;
+  verifyPhoneAndLogin: (challengeId: string, code: string) => Promise<void>;
   register: (email: string, password: string, displayName?: string, gender?: string) => Promise<void>;
   verifyChallenge: (challengeId: string, code: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -125,6 +129,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAccount(await api.get<Account>("/v1/me"));
   }, []);
 
+  const loginWithGoogle = useCallback(async (idToken: string) => {
+    const tokens = await api.post<LoginResponse>("/v1/auth/oauth/google", {
+      id_token: idToken,
+    });
+    saveTokens(tokens);
+    setAccessToken(tokens.access_token);
+    setAccount(await api.get<Account>("/v1/me"));
+  }, []);
+
+  const startPhoneAuth = useCallback(async (phone: string) => {
+    await api.post("/v1/auth/phone/start", { phone });
+  }, []);
+
+  const verifyPhoneAndLogin = useCallback(async (challengeId: string, code: string) => {
+    const tokens = await api.post<LoginResponse>("/v1/auth/phone/verify", {
+      challenge_id: challengeId,
+      code,
+    });
+    saveTokens(tokens);
+    setAccessToken(tokens.access_token);
+    setAccount(await api.get<Account>("/v1/me"));
+  }, []);
+
   const register = useCallback(async (email: string, password: string, displayName?: string, gender?: string) => {
     await api.post("/v1/auth/register", {
       email,
@@ -172,13 +199,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       account,
       loading,
       signIn,
+      loginWithGoogle,
+      startPhoneAuth,
+      verifyPhoneAndLogin,
       register,
       verifyChallenge,
       signOut,
       signOutAll,
       refreshAccount,
     }),
-    [account, loading, signIn, register, verifyChallenge, signOut, signOutAll, refreshAccount],
+    [
+      account,
+      loading,
+      signIn,
+      loginWithGoogle,
+      startPhoneAuth,
+      verifyPhoneAndLogin,
+      register,
+      verifyChallenge,
+      signOut,
+      signOutAll,
+      refreshAccount,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -198,6 +240,10 @@ export function authErrorMessage(err: unknown): string {
         return "Incorrect email or password.";
       case "ACCOUNT_NOT_VERIFIED":
         return "This account's email is not verified yet.";
+      case "GOOGLE_TOKEN_INVALID":
+        return "Google sign-in failed. Please try again.";
+      case "PHONE_NUMBER_INVALID":
+        return "That doesn't look like a valid phone number. Use the format +14155550123.";
       case "CHALLENGE_INVALID":
         return "That verification code is invalid or has expired.";
       case "VALIDATION_FAILED":

@@ -13,6 +13,7 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.repositories import notification_center as notifications_repo
+from app.services import notifications as outbound_notifications
 
 client = TestClient(app)
 
@@ -216,3 +217,59 @@ def test_push_endpoint_revoke_unknown_is_404(dynamo_table, monkeypatch):
 
     resp = client.delete("/v1/push-endpoints/does-not-exist", headers=_auth_headers(tokens))
     assert resp.status_code == 404
+
+
+# ---- Outbound email --------------------------------------------------------
+
+
+def test_production_verification_email_uses_ses_and_hides_dev_code(monkeypatch):
+    settings = outbound_notifications.get_settings()
+    monkeypatch.setattr(settings, "environment", "production")
+    monkeypatch.setattr(settings.email, "provider", "ses")
+    monkeypatch.setattr(settings.email, "sender", "no-reply@laarilaara.com")
+
+    captured: dict = {}
+
+    class FakeSesClient:
+        def send_email(self, **kwargs):
+            captured.update(kwargs)
+            return {"MessageId": "test-message-id"}
+
+    monkeypatch.setattr(outbound_notifications, "get_ses_client", FakeSesClient)
+
+    outbound_notifications.send_verification_code(
+        "recipient@example.com", "482193", "challenge-123"
+    )
+
+    assert captured["FromEmailAddress"] == "no-reply@laarilaara.com"
+    assert captured["Destination"] == {"ToAddresses": ["recipient@example.com"]}
+    simple = captured["Content"]["Simple"]
+    assert "482193" in simple["Body"]["Text"]["Data"]
+    assert "challenge-123" in simple["Body"]["Html"]["Data"]
+    assert outbound_notifications.peek_dev_code("recipient@example.com") is None
+
+
+def test_production_verification_sms_uses_sns_for_phone_numbers(monkeypatch):
+    settings = outbound_notifications.get_settings()
+    monkeypatch.setattr(settings, "environment", "production")
+
+    captured: dict = {}
+
+    class FakeSnsClient:
+        def publish(self, **kwargs):
+            captured.update(kwargs)
+            return {"MessageId": "test-message-id"}
+
+    monkeypatch.setattr(outbound_notifications, "get_sns_client", FakeSnsClient)
+
+    outbound_notifications.send_verification_code("+14155550123", "482193", "challenge-123")
+
+    assert captured["PhoneNumber"] == "+14155550123"
+    assert "482193" in captured["Message"]
+    assert captured["MessageAttributes"]["AWS.SNS.SMS.SMSType"]["StringValue"] == "Transactional"
+
+
+def test_is_phone_number_distinguishes_email_from_phone():
+    assert outbound_notifications.is_phone_number("+14155550123") is True
+    assert outbound_notifications.is_phone_number("recipient@example.com") is False
+    assert outbound_notifications.is_phone_number("not-a-real-value") is False
