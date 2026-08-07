@@ -35,6 +35,7 @@ data "aws_iam_policy_document" "lambda_app_access" {
       "dynamodb:Scan",
       "dynamodb:BatchGetItem",
       "dynamodb:BatchWriteItem",
+      "dynamodb:DescribeTable",
     ]
     resources = [
       aws_dynamodb_table.main.arn,
