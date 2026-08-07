@@ -65,9 +65,9 @@ interface AuthContextValue {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   loginWithGoogle: (idToken: string) => Promise<void>;
-  startPhoneAuth: (phone: string) => Promise<void>;
+  startPhoneAuth: (phone: string) => Promise<string>;
   verifyPhoneAndLogin: (challengeId: string, code: string) => Promise<void>;
-  register: (email: string, password: string, displayName?: string, gender?: string) => Promise<void>;
+  register: (email: string, password: string, displayName?: string, gender?: string) => Promise<string>;
   verifyChallenge: (challengeId: string, code: string) => Promise<void>;
   signOut: () => Promise<void>;
   signOutAll: () => Promise<void>;
