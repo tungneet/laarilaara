@@ -1,6 +1,8 @@
 """Authentication application services."""
 from __future__ import annotations
 
+import uuid
+
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token as google_id_token
 
@@ -67,7 +69,6 @@ def register_account(
         # "you already have an account" email out-of-band here.
         logger.info("registration attempted for existing email (suppressed)")
         # Return a fake challenge_id that looks real but will fail verification
-        import uuid
         return str(uuid.uuid4())
 
     code = generate_numeric_code()
