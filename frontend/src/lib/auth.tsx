@@ -139,7 +139,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const startPhoneAuth = useCallback(async (phone: string) => {
-    await api.post("/v1/auth/phone/start", { phone });
+    const response = await api.post<{ challenge_id: string }>("/v1/auth/phone/start", { phone });
+    return response.challenge_id;
   }, []);
 
   const verifyPhoneAndLogin = useCallback(async (challengeId: string, code: string) => {
@@ -153,12 +154,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const register = useCallback(async (email: string, password: string, displayName?: string, gender?: string) => {
-    await api.post("/v1/auth/register", {
+    const response = await api.post<{ challenge_id: string }>("/v1/auth/register", {
       email,
       password,
       display_name: displayName || undefined,
       gender: gender || undefined,
     });
+    return response.challenge_id;
   }, []);
 
   const verifyChallenge = useCallback(

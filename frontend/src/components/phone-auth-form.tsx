@@ -27,6 +27,7 @@ export function PhoneAuthForm() {
   const [phone, setPhone] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [challengeId, setChallengeId] = useState<string | null>(null);
   const [devFill, setDevFill] = useState<{ challenge_id: string; code: string } | null>(null);
 
   async function fetchDevCode(value: string) {
@@ -45,7 +46,8 @@ export function PhoneAuthForm() {
     setError(null);
     setBusy(true);
     try {
-      await startPhoneAuth(phone.trim());
+      const challengeId = await startPhoneAuth(phone.trim());
+      setChallengeId(challengeId);
       if (IS_LOCAL_API) await fetchDevCode(phone.trim());
       setStep("code");
     } catch (err) {
@@ -79,7 +81,7 @@ export function PhoneAuthForm() {
         onClick={() => setOpen(true)}
         className="glass mb-5 w-full cursor-pointer rounded-full py-2.5 text-[14px] font-semibold transition-transform hover:-translate-y-px"
       >
-        📱 Continue with phone
+        Continue with phone
       </button>
     );
   }
@@ -122,17 +124,13 @@ export function PhoneAuthForm() {
           {IS_LOCAL_API && devFill && (
             <div className="mb-4 rounded-xl bg-white/5 px-3.5 py-2.5 text-[12px] leading-relaxed text-ink-soft">
               <span className="font-semibold text-ink">Local development:</span>{" "}
-              no real SMS is sent — the fields below are pre-filled. Just hit verify.
+              no real SMS is sent — the code below is pre-filled. Just hit verify.
             </div>
           )}
-          <Field
-            key={devFill?.challenge_id ?? "chal"}
-            label="Challenge ID"
+          <input
+            type="hidden"
             name="challengeId"
-            type="text"
-            autoComplete="off"
-            defaultValue={devFill?.challenge_id ?? ""}
-            required
+            value={challengeId || devFill?.challenge_id || ""}
           />
           <Field
             key={devFill?.code ?? "code"}

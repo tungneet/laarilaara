@@ -44,12 +44,14 @@ def register_account(
     locale: str = "en",
     display_name: str | None = None,
     gender: str | None = None,
-) -> None:
+) -> str:
     """Start registration.
 
-    Always returns without indicating whether the email already existed, so the
-    endpoint response cannot be used to enumerate accounts. On a genuinely new
-    email an account plus an email-verification challenge are created.
+    Always returns a challenge_id (same one for new and existing emails, never reveals
+    whether the email already existed, so the endpoint response cannot be used to
+    enumerate accounts). On a genuinely new email an account plus an email-verification
+    challenge are created. On an existing email, a fake challenge_id is returned that
+    will fail verification.
     """
     password_hash = hash_password(password)
     try:
@@ -64,11 +66,14 @@ def register_account(
         # Silent: do not reveal existence. A real system may send a
         # "you already have an account" email out-of-band here.
         logger.info("registration attempted for existing email (suppressed)")
-        return
+        # Return a fake challenge_id that looks real but will fail verification
+        import uuid
+        return str(uuid.uuid4())
 
     code = generate_numeric_code()
     challenge = challenges_repo.create_email_verification_challenge(account.id, code)
     send_verification_code(account.email, code, challenge.id)
+    return challenge.id
 
 
 def verify_challenge(challenge_id: str, code: str) -> None:
@@ -171,8 +176,8 @@ def login_with_google(google_id_token_value: str) -> tuple[str, str, int]:
     return _issue_session(account)
 
 
-def start_phone_auth(phone: str) -> None:
-    """Start phone sign-in/signup. Always returns (no enumeration of whether
+def start_phone_auth(phone: str) -> str:
+    """Start phone sign-in/signup. Always returns a challenge_id (no enumeration of whether
     the phone is already registered), same generic-response convention as
     `register_account`.
 
@@ -197,6 +202,7 @@ def start_phone_auth(phone: str) -> None:
     code = generate_numeric_code()
     challenge = challenges_repo.create_phone_auth_challenge(account.id, code)
     send_verification_code(normalized, code, challenge.id)
+    return challenge.id
 
 
 def verify_phone_and_login(challenge_id: str, code: str) -> tuple[str, str, int]:

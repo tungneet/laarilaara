@@ -81,7 +81,7 @@ _PHONE_NUMBER_INVALID_ERROR = ApiError(
     status_code=status.HTTP_202_ACCEPTED,
 )
 async def register(payload: RegisterRequest) -> RegisterResponse:
-    auth_service.register_account(
+    challenge_id = auth_service.register_account(
         email=str(payload.email),
         password=payload.password,
         locale=payload.locale,
@@ -89,7 +89,7 @@ async def register(payload: RegisterRequest) -> RegisterResponse:
         gender=payload.gender,
     )
     # Generic response regardless of whether the email was new.
-    return RegisterResponse()
+    return RegisterResponse(challenge_id=challenge_id)
 
 
 @router.post(
@@ -159,10 +159,10 @@ async def login_with_google(payload: GoogleAuthRequest) -> LoginResponse:
 )
 async def start_phone_auth(payload: PhoneStartRequest) -> PhoneStartResponse:
     try:
-        auth_service.start_phone_auth(payload.phone)
+        challenge_id = auth_service.start_phone_auth(payload.phone)
     except auth_service.PhoneNumberInvalidError as exc:
         raise _PHONE_NUMBER_INVALID_ERROR from exc
-    return PhoneStartResponse()
+    return PhoneStartResponse(challenge_id=challenge_id)
 
 
 @router.post(

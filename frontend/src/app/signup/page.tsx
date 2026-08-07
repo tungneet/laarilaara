@@ -27,6 +27,8 @@ export default function SignUpPage() {
   const [busy, setBusy] = useState(false);
   // Held in memory so we can auto sign-in right after verification.
   const [credentials, setCredentials] = useState<{ email: string; password: string } | null>(null);
+  // Challenge ID from backend, stored so we can pass it hidden to verify endpoint.
+  const [challengeId, setChallengeId] = useState<string | null>(null);
   // Dev-only convenience: pre-filled from the backend's __dev__ endpoint.
   const [devFill, setDevFill] = useState<{ challenge_id: string; code: string } | null>(null);
 
@@ -52,7 +54,8 @@ export default function SignUpPage() {
     const email = String(data.get("email"));
     const password = String(data.get("password"));
     try {
-      await register(email, password, displayName, gender);
+      const cid = await register(email, password, displayName, gender);
+      setChallengeId(cid);
       setCredentials({ email, password });
       if (IS_LOCAL_API) await fetchDevCode(email);
       else setDevFill(null);
@@ -145,27 +148,18 @@ export default function SignUpPage() {
         ) : (
           <AuthCard
             title="Verify your email"
-            subtitle="We sent a verification code to your email address. Enter it below along with the challenge ID from the same message."
+            subtitle="Enter the 6-digit verification code we sent to your email address."
           >
             {IS_LOCAL_API && devFill && (
               <div className="glass mb-5 rounded-xl px-4 py-3 text-[12.5px] leading-relaxed text-ink-soft">
                 <span className="font-semibold text-ink">Local development:</span>{" "}
-                no real email is sent — the fields below are pre-filled straight
+                no real email is sent — the code below is pre-filled straight
                 from the dev server. Just hit verify.
               </div>
             )}
             <form onSubmit={onVerify} noValidate>
               <FormError message={error} />
-              <Field
-                key={devFill?.challenge_id ?? "chal"}
-                label="Challenge ID"
-                name="challengeId"
-                type="text"
-                autoComplete="off"
-                placeholder="e.g. 042a77a1e01a4441…"
-                defaultValue={devFill?.challenge_id ?? ""}
-                required
-              />
+              <input type="hidden" name="challengeId" value={challengeId || devFill?.challenge_id || ""} />
               <Field
                 key={devFill?.code ?? "code"}
                 label="Verification code"

@@ -13,9 +13,14 @@ class RegisterRequest(BaseModel):
 
 
 class RegisterResponse(BaseModel):
-    """Deliberately generic: never reveals whether the email already exists."""
+    """Deliberately generic: never reveals whether the email already exists.
+    
+    In production the frontend should store challenge_id and never show it to the
+    user — it's passed hidden to the verify endpoint.
+    """
 
     status: str = "verification_pending"
+    challenge_id: str
     message: str = (
         "If this email can be registered, a verification code has been sent."
     )
@@ -43,9 +48,14 @@ class PhoneStartRequest(BaseModel):
 
 
 class PhoneStartResponse(BaseModel):
-    """Deliberately generic: never reveals whether the phone is already registered."""
+    """Deliberately generic: never reveals whether the phone is already registered.
+    
+    In production the frontend should store challenge_id and never show it to the
+    user — it's passed hidden to the verify endpoint.
+    """
 
     status: str = "verification_pending"
+    challenge_id: str
     message: str = (
         "If this phone number can be registered, a verification code has been sent."
     )
